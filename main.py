@@ -253,7 +253,7 @@ def health():
 
 @app.get("/")
 def index():
-    return "YouTube Downloader API v1.0"
+    return {"status": "ok", "message": "YouTube Media Downloader API"}
 
 
 if __name__ == "__main__":

@@ -145,7 +145,7 @@ def validate_video(url: str):
     return info, title
 
 @app.get("/download/audio")
-@limiter.limit("2/minute")
+@limiter.limit("7/minute")
 def download_audio(request: Request, url: str = Query(...),format: str = Query("mp3", enum=["mp3", "fmp4"])):
     info, title = validate_video(url)
 
@@ -166,7 +166,7 @@ def download_audio(request: Request, url: str = Query(...),format: str = Query("
 
 
 @app.get("/download/video")
-@limiter.limit("1/minute")
+@limiter.limit("5/minute")
 def download_video(request: Request, url: str = Query(...),quality: str = Query("auto", enum=["auto", "720p", "1080p"])):
     info, title = validate_video(url)
 
@@ -184,7 +184,7 @@ def download_video(request: Request, url: str = Query(...),quality: str = Query(
     )
 
 @app.get("/download/playlist")
-@limiter.limit("1/minute")
+@limiter.limit("3/minute")
 def download_playlist(
     request: Request, 
     url: str = Query(...),

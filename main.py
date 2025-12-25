@@ -125,6 +125,7 @@ def validate_video(url: str):
         "quiet": True,
         "noplaylist": True,
         "skip_download": True,
+        "cookiesfrombrowser": ("chrome","firefox","edge","brave"),
         "extractor_args": {
             "youtube": {
                 "player_client": ["android"]
@@ -200,6 +201,7 @@ def download_playlist(
     ydl_opts = {
         "quiet": True,
         "skip_download": True,
+        "cookiesfrombrowser": ("chrome","firefox","edge","brave"),
         "extract_flat": True,   # 🔑 ensures entries exist
         "js_runtimes": {
             "node": {}   

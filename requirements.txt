@@ -2,8 +2,7 @@ fastapi==0.127.0
 prometheus_client==0.23.1
 prometheus_fastapi_instrumentator==7.1.0
 python-dotenv==1.2.1
-redis==3.2.0
+redis==4.3.4
 slowapi==0.1.9
-uvicorn==0.12.2
+uvicorn==0.40.0
 yt_dlp==2025.12.8
-python-multipart

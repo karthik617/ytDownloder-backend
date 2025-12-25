@@ -5,7 +5,8 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
-from prometheus_client import Counter, Gauge
+from prometheus_client import Counter
+from fastapi.middleware.cors import CORSMiddleware
 import yt_dlp
 import shutil
 import redis
@@ -21,9 +22,19 @@ load_dotenv()
 
 app = FastAPI(title="YouTube Media Downloader API")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5175", "https://ytdownloader-frontend.onrender.com"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"]
+)
+
 # Connect to Redis
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = os.environ.get("REDIS_PORT")
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 
 r = None
 if REDIS_HOST and REDIS_PORT:
@@ -31,6 +42,7 @@ if REDIS_HOST and REDIS_PORT:
         r = redis.Redis(
             host=REDIS_HOST,
             port=int(REDIS_PORT),
+            password=REDIS_PASSWORD,
             decode_responses=True,
             socket_connect_timeout=1
         )
@@ -147,7 +159,8 @@ def download_audio(request: Request, url: str = Query(...),format: str = Query("
         headers={
             "Content-Disposition": f'attachment; filename="{safe_title}.{ext}"',
             "Cache-Control": "no-store",
-            "Accept-Ranges": "bytes"
+            "Accept-Ranges": "bytes",
+            "Access-Control-Expose-Headers": "Content-Disposition"
         }
     )
 
@@ -165,7 +178,8 @@ def download_video(request: Request, url: str = Query(...),quality: str = Query(
         headers={
             "Content-Disposition": f'attachment; filename="{safe_title}.mp4"',
             "Cache-Control": "no-store",
-            "Accept-Ranges": "bytes"
+            "Accept-Ranges": "bytes",
+            "Access-Control-Expose-Headers": "Content-Disposition"
         }
     )
 
@@ -194,6 +208,8 @@ def download_playlist(
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(playlist_url, download=False)
+        title = info.get("title", "playlist")
+        safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
 
     if not info or "entries" not in info:
         raise HTTPException(400, "Invalid playlist URL")
@@ -221,7 +237,10 @@ def download_playlist(
             zip_stream(all_files),
             media_type="application/zip",
             headers={
-                "Content-Disposition": 'attachment; filename="playlist.zip"'
+                "Content-Disposition": f'attachment; filename="{safe_title}.zip"',
+                "Cache-Control": "no-store",
+                "Accept-Ranges": "bytes",
+                "Access-Control-Expose-Headers": "Content-Disposition"
             }
         )
     finally:

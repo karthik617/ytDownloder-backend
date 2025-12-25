@@ -16,7 +16,7 @@ def audio_stream_generator(url: str,format: str):
             "-movflags", "frag_keyframe+empty_moov+faststart"
         ]
         mime = "audio/mp4"
-        ext = "m4a"
+        ext = "mp4"
 
     ytdlp_cmd = [
         "yt-dlp",
@@ -30,7 +30,7 @@ def audio_stream_generator(url: str,format: str):
         "ffmpeg",
         "-i", "pipe:0",
         *ffmpeg_args,
-        "-f", "mp4" if ext == "m4a" else "mp3",
+        "-f", "mp4" if ext == "mp4" else "mp3",
         "pipe:1"
     ]
 

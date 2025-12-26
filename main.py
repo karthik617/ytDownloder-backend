@@ -31,7 +31,6 @@ app.add_middleware(
 )
 # Connect to Redis
 REDIS_URL = os.environ.get("REDIS_URL")
-
 r = None
 if REDIS_URL:
     try:

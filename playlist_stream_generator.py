@@ -1,8 +1,8 @@
 import os
 import tempfile
-import yt_dlp
 from zipfile import ZipFile
 from io import BytesIO
+from utils.cookie_rotation import download_with_cookie_rotation
 
 
 def download_to_temp(url: str, audio_only: bool, title: str):
@@ -14,7 +14,6 @@ def download_to_temp(url: str, audio_only: bool, title: str):
     ydl_opts = {
         "format": "bestaudio/best" if audio_only else "best",
         "outtmpl": output_template,
-        "quiet": True,
         "ignoreerrors": True,
         "noplaylist": True,
         "postprocessors": [{
@@ -24,8 +23,9 @@ def download_to_temp(url: str, audio_only: bool, title: str):
         }] if audio_only else []
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+    # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    #     info = ydl.extract_info(url, download=True)
+    info =  download_with_cookie_rotation(url,ydl_opts,True)
     
     # List all downloaded files
     files = []

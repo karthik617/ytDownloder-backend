@@ -7,16 +7,17 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter
 from fastapi.middleware.cors import CORSMiddleware
-import yt_dlp
 import shutil
 import redis
 import json
 import os
+import base64
 from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
 from audio_stream_generator import audio_stream_generator
 from video_stream_generator import video_stream_generator
 from playlist_stream_generator import download_to_temp, zip_stream
+from utils.cookie_rotation import download_with_cookie_rotation
 
 load_dotenv()
 
@@ -30,7 +31,18 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition"]
 )
+COOKIE_DIR=os.environ.get("COOKIE_DIR")
+@app.on_event("startup")
+def startup():
+    cookie_dir = COOKIE_DIR
+    os.makedirs(cookie_dir, exist_ok=True)
 
+    for i in range(1, 5):
+        env_key = f"YT_COOKIE_{i}"
+        if env_key in os.environ:
+            path = f"{cookie_dir}/yt_{i}.txt"
+            with open(path, "wb") as f:
+                f.write(base64.b64decode(os.environ[env_key]))
 # Connect to Redis
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = os.environ.get("REDIS_PORT")
@@ -105,8 +117,12 @@ def get_video_info(url: str, opts: dict):
 
     CACHE_MISSES.inc()
     # Fetch from YouTube
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=False)
+    # with yt_dlp.YoutubeDL(opts) as ydl:
+    #     info = ydl.extract_info(url, download=False)
+    try:
+        info =  download_with_cookie_rotation(url,opts,False)
+    except Exception as e:
+        raise HTTPException(400, str(e))
 
     if not info:
         raise ValueError("Invalid video URL")
@@ -122,10 +138,8 @@ def get_video_info(url: str, opts: dict):
 
 def validate_video(url: str):
     ydl_opts = {
-        "quiet": True,
         "noplaylist": True,
         "skip_download": True,
-        "cookiesfrombrowser": ("chrome","firefox","edge","brave"),
         "extractor_args": {
             "youtube": {
                 "player_client": ["android"]
@@ -199,19 +213,21 @@ def download_playlist(
     playlist_url = normalize_playlist_url(url)
 
     ydl_opts = {
-        "quiet": True,
         "skip_download": True,
-        "cookiesfrombrowser": ("chrome","firefox","edge","brave"),
         "extract_flat": True,   # 🔑 ensures entries exist
         "js_runtimes": {
             "node": {}   
         }   
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(playlist_url, download=False)
-        title = info.get("title", "playlist")
-        safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
+    # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    #     info = ydl.extract_info(playlist_url, download=False)
+    try:
+        info =  download_with_cookie_rotation(playlist_url,ydl_opts,False)
+    except Exception as e:
+        raise HTTPException(400, str(e))
+    title = info.get("title", "playlist")
+    safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
 
     if not info or "entries" not in info:
         raise HTTPException(400, "Invalid playlist URL")

@@ -37,9 +37,7 @@ if REDIS_URL:
         r = redis.from_url(
             REDIS_URL,
             decode_responses=True,
-            socket_connect_timeout=3,
-            socket_timeout=3,
-            ssl_cert_reqs=None,   # ✅ REQUIRED on Render
+            socket_connect_timeout=2,
         )
         r.ping()
     except redis.RedisError:

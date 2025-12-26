@@ -11,15 +11,13 @@ import shutil
 import redis
 import json
 import os
-import base64
 from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
+load_dotenv()
 from audio_stream_generator import audio_stream_generator
 from video_stream_generator import video_stream_generator
 from playlist_stream_generator import download_to_temp, zip_stream
 from utils.cookie_rotation import download_with_cookie_rotation
-
-load_dotenv()
 
 app = FastAPI(title="YouTube Media Downloader API")
 
@@ -31,18 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition"]
 )
-COOKIE_DIR=os.environ.get("COOKIE_DIR")
-@app.on_event("startup")
-def startup():
-    cookie_dir = COOKIE_DIR
-    os.makedirs(cookie_dir, exist_ok=True)
-
-    for i in range(1, 5):
-        env_key = f"YT_COOKIE_{i}"
-        if env_key in os.environ:
-            path = f"{cookie_dir}/yt_{i}.txt"
-            with open(path, "wb") as f:
-                f.write(base64.b64decode(os.environ[env_key]))
 # Connect to Redis
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = os.environ.get("REDIS_PORT")
@@ -63,9 +49,9 @@ if REDIS_HOST and REDIS_PORT:
         print("Redis unavailable")
         r = None
 
-CACHE_TTL = int(os.environ.get("CACHE_TTL")) or 3600
-MAX_DURATION = int(os.environ.get("MAX_DURATION")) or 30 * 60  # 30 min
-MAX_VIDEOS = int(os.environ.get("MAX_VIDEOS")) or 10  # safety limit for playlists
+CACHE_TTL = int(os.environ.get("CACHE_TTL", 3600))
+MAX_DURATION = int(os.environ.get("MAX_DURATION", 1800))
+MAX_VIDEOS = int(os.environ.get("MAX_VIDEOS", 10))
 
 # Counter: total downloads per type
 DOWNLOAD_COUNTER = Counter(

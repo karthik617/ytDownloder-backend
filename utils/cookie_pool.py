@@ -2,8 +2,9 @@ import os
 import random
 import time
 import threading
+import base64
 
-COOKIE_DIR = "cookies"
+COOKIE_DIR = os.environ.get("COOKIE_DIR", "cookies")
 COOLDOWN_SECONDS = 15 * 60   # 15 minutes
 MAX_FAILURES = 2
 
@@ -14,6 +15,19 @@ class CookiePool:
         self._load()
 
     def _load(self):
+        os.makedirs(COOKIE_DIR, exist_ok=True)
+
+        for i in range(1, 3):
+            env_key = f"YT_COOKIE_{i}"
+            print(env_key)
+            print(os.environ)
+            if env_key in os.environ:
+                path = f"{COOKIE_DIR}/yt_{i}.txt"
+                print(path)
+                with open(path, "wb") as f:
+                    print(os.environ[env_key])
+                    f.write(base64.b64decode(os.environ[env_key]))
+
         for f in os.listdir(COOKIE_DIR):
             if f.endswith(".txt"):
                 path = os.path.join(COOKIE_DIR, f)

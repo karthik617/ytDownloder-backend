@@ -11,13 +11,13 @@ import shutil
 import redis
 import json
 import os
+import yt_dlp
 from urllib.parse import urlparse, parse_qs
-from dotenv import load_dotenv
-load_dotenv()
 from audio_stream_generator import audio_stream_generator
 from video_stream_generator import video_stream_generator
 from playlist_stream_generator import download_to_temp, zip_stream
-from utils.cookie_rotation import download_with_cookie_rotation
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI(title="YouTube Media Downloader API")
 
@@ -29,6 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition"]
 )
+
 # Connect to Redis
 REDIS_URL = os.environ.get("REDIS_URL")
 r = None
@@ -97,14 +98,9 @@ def get_video_info(url: str, opts: dict):
         pass  # Redis unavailable → continue
 
     CACHE_MISSES.inc()
-    # Fetch from YouTube
-    # with yt_dlp.YoutubeDL(opts) as ydl:
-    #     info = ydl.extract_info(url, download=False)
-    try:
-        info =  download_with_cookie_rotation(url,opts,False)
-        print("Downloaded info [AUDIO / VIDEO] Info", info)
-    except Exception as e:
-        raise HTTPException(400, str(e))
+    #Fetch from YouTube
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(url, download=False)
 
     if not info:
         raise ValueError("Invalid video URL")
@@ -151,8 +147,8 @@ def download_audio(request: Request, url: str = Query(...),format: str = Query("
     except Exception as e:
         raise HTTPException(400, str(e))
     
-    print("Downloaded info [AUDIO] Info", info)
-    print("Downloaded info [AUDIO] Title", title)
+    # print("Downloaded info [AUDIO] Info", info)
+    # print("Downloaded info [AUDIO] Title", title)
 
     safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
 
@@ -180,8 +176,8 @@ def download_video(request: Request, url: str = Query(...),quality: str = Query(
     except Exception as e:
         raise HTTPException(400, str(e))
     
-    print("Downloaded info [VIDEO] Info", info)
-    print("Downloaded info [VIDEO] Title", title)
+    # print("Downloaded info [VIDEO] Info", info)
+    # print("Downloaded info [VIDEO] Title", title)
 
     safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
 
@@ -218,13 +214,8 @@ def download_playlist(
         }   
     }
 
-    # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    #     info = ydl.extract_info(playlist_url, download=False)
-    try:
-        info =  download_with_cookie_rotation(playlist_url,ydl_opts,False)
-        print("Downloaded info [PLAYLIST] Info", info)
-    except Exception as e:
-        raise HTTPException(400, str(e))
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(playlist_url, download=False)
     title = info.get("title", "playlist")
     safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
 

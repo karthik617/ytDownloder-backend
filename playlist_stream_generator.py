@@ -2,7 +2,7 @@ import os
 import tempfile
 from zipfile import ZipFile
 from io import BytesIO
-from utils.cookie_rotation import download_with_cookie_rotation
+import yt_dlp
 
 
 def download_to_temp(url: str, audio_only: bool, title: str):
@@ -23,10 +23,8 @@ def download_to_temp(url: str, audio_only: bool, title: str):
         }] if audio_only else []
     }
 
-    # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    #     info = ydl.extract_info(url, download=True)
-    info =  download_with_cookie_rotation(url,ydl_opts,True)
-    print("Downloaded info [PLAYLIST Download]", info)
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
     
     # List all downloaded files
     files = []

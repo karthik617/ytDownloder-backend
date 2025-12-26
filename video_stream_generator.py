@@ -11,6 +11,9 @@ def video_stream_generator(url: str, quality: str):
     ytdlp_cmd = [
         "yt-dlp",
         "--no-playlist",
+        "--cookies", "cookies/yt_1.txt",
+        "--sleep-requests", "5",
+        "--concurrent-fragments", "1",
         "-f", fmt,
         "-o", "-"
     ]

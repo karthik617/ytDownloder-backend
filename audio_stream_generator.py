@@ -32,6 +32,9 @@ def audio_stream_generator(url: str, format: str):
         "yt-dlp",
         "--no-playlist",
         "--no-progress",
+        "--cookies", "cookies/yt_1.txt",
+        "--sleep-requests", "5",
+        "--concurrent-fragments", "1",
         "-f", "bestaudio",
         "-o", "-",
         "--js-runtimes", "deno"

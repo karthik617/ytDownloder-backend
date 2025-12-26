@@ -12,6 +12,7 @@ import redis
 import json
 import os
 import yt_dlp
+import subprocess
 from urllib.parse import urlparse, parse_qs
 from audio_stream_generator import audio_stream_generator
 from video_stream_generator import video_stream_generator
@@ -118,6 +119,7 @@ def validate_video(url: str):
     ydl_opts = {
         "noplaylist": True,
         "skip_download": True,
+        "cookiefile": "cookies/yt_1.txt", 
         "extractor_args": {
             "youtube": {
                 "player_client": ["android"]
@@ -208,6 +210,7 @@ def download_playlist(
 
     ydl_opts = {
         "skip_download": True,
+        "cookiefile": "cookies/yt_1.txt", 
         "extract_flat": True,   # 🔑 ensures entries exist
         "js_runtimes": {
             "node": {}   
@@ -254,6 +257,168 @@ def download_playlist(
     finally:
         for d in temp_dirs:
             shutil.rmtree(d, ignore_errors=True)
+
+@app.get("/stream/video")
+async def stream_video(
+    request: Request,
+    url: str = Query(...)
+):
+    ydl_opts = {
+        "skip_download": True,
+        "cookiefile": "cookies/yt_1.txt", 
+        "extract_flat": True,   # 🔑 ensures entries exist
+        "js_runtimes": {
+            "node": {}   
+        }   
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+    if not info:
+        raise HTTPException(400, "Invalid URL")
+    
+    title = info.get("title", "playlist")
+    safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
+
+    cmd = [
+        "yt-dlp",
+        "--no-playlist",
+        "--cookies", "cookies/yt_1.txt",
+        "--concurrent-fragments", "1",
+        "-f", "bestvideo[height<=720]+bestaudio/best[height<=720]",
+        "-o", "-",
+        url
+    ]
+
+
+    ytdlp = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=0
+    )
+
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-i", "pipe:0",
+        "-movflags", "frag_keyframe+empty_moov+faststart",
+        "-c", "copy",
+        "-f", "mp4",
+        "pipe:1"
+    ]
+
+    ffmpeg = subprocess.Popen(
+        ffmpeg_cmd,
+        stdin=ytdlp.stdout,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    def generate():
+        try:
+            while True:
+                if request.client is None:
+                    break
+
+                chunk = ffmpeg.stdout.read(64 * 1024)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            ytdlp.kill()
+            ytdlp.wait()
+            ffmpeg.kill()
+            ffmpeg.wait()
+
+    return StreamingResponse(
+        generate(),
+        media_type="video/mp4",
+        headers={
+            "Cache-Control": "no-store",
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": f'inline; filename="{safe_title}.mp4"',
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )
+
+@app.get("/stream/audio")
+async def stream_audio(
+    request: Request,
+    url: str = Query(...)
+):
+    ydl_opts = {
+        "skip_download": True,
+        "cookiefile": "cookies/yt_1.txt", 
+        "extract_flat": True,   # 🔑 ensures entries exist
+        "js_runtimes": {
+            "node": {}   
+        }   
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+    if not info:
+        raise HTTPException(400, "Invalid URL")
+    
+    title = info.get("title", "playlist")
+    safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
+
+    cmd = [
+        "yt-dlp",
+        "--no-playlist",
+        "--cookies", "cookies/yt_1.txt",
+        "-f", "bestaudio",
+        "-o", "-",
+        url
+    ]
+
+    ytdlp = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-i", "pipe:0",
+        "-vn",
+        "-c:a", "libmp3lame",
+        "-b:a", "192k",
+        "-f", "mp3",
+        "-movflags", "frag_keyframe+empty_moov",
+        "pipe:1"
+    ]
+
+    ffmpeg = subprocess.Popen(
+        ffmpeg_cmd,
+        stdin=ytdlp.stdout,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    def generate():
+        try:
+            while True:
+                chunk = ffmpeg.stdout.read(64 * 1024)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            ytdlp.kill()
+            ytdlp.wait()
+            ffmpeg.kill()
+            ffmpeg.wait()
+
+    return StreamingResponse(
+        generate(),
+        media_type="audio/mpeg",
+        headers={
+            "Cache-Control": "no-store",
+            "Accept-Ranges": "bytes",
+            "Content-Disposition": f'inline; filename="{safe_title}.mp3"',
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )
 
 @app.get("/health")
 def health():

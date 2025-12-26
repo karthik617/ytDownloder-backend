@@ -15,6 +15,7 @@ def download_to_temp(url: str, audio_only: bool, title: str):
         "format": "bestaudio/best" if audio_only else "best",
         "outtmpl": output_template,
         "ignoreerrors": True,
+        "cookiefile": "cookies/yt_1.txt", 
         "noplaylist": True,
         "postprocessors": [{
             "key": "FFmpegExtractAudio",

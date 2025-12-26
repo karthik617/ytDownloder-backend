@@ -25,13 +25,14 @@ def audio_stream_generator(url: str,format: str):
         "yt-dlp",
         "--no-playlist",
         "-f", "bestaudio",
-        "-o", "-",
-        url
+        "-o", "-"
     ]
     cookie_file = cookie_pool.get_cookie()
     print("Using cookie: [AUDIO]", cookie_file)
     if cookie_file:
         ytdlp_cmd += ["--cookies", cookie_file]
+    
+    ytdlp_cmd.append(url)
 
     ffmpeg_cmd = [
         "ffmpeg",

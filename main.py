@@ -144,7 +144,15 @@ def validate_video(url: str):
 @app.get("/download/audio")
 @limiter.limit("7/minute")
 def download_audio(request: Request, url: str = Query(...),format: str = Query("mp3", enum=["mp3", "fmp4"])):
-    info, title = validate_video(url)
+    info = None
+    title = None
+    try:
+        info, title = validate_video(url)
+    except Exception as e:
+        raise HTTPException(400, str(e))
+    
+    print("Downloaded info [AUDIO] Info", info)
+    print("Downloaded info [AUDIO] Title", title)
 
     safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
 
@@ -165,7 +173,15 @@ def download_audio(request: Request, url: str = Query(...),format: str = Query("
 @app.get("/download/video")
 @limiter.limit("5/minute")
 def download_video(request: Request, url: str = Query(...),quality: str = Query("auto", enum=["auto", "720p", "1080p"])):
-    info, title = validate_video(url)
+    info = None
+    title = None
+    try:
+        info, title = validate_video(url)
+    except Exception as e:
+        raise HTTPException(400, str(e))
+    
+    print("Downloaded info [VIDEO] Info", info)
+    print("Downloaded info [VIDEO] Title", title)
 
     safe_title = "".join(c for c in title if c.isalnum() or c in " -_")
 

@@ -15,14 +15,15 @@ def video_stream_generator(url: str, quality: str):
         "yt-dlp",
         "--no-playlist",
         "-f", fmt,
-        "-o", "-",
-        url
+        "-o", "-"
     ]
 
     cookie_file = cookie_pool.get_cookie()
     print("Using cookie: [VIDEO]", cookie_file)
     if cookie_file:
         ytdlp_cmd += ["--cookies", cookie_file]
+    
+    ytdlp_cmd.append(url)
 
     ffmpeg_cmd = [
         "ffmpeg",

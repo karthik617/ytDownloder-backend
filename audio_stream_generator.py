@@ -7,9 +7,9 @@ def audio_stream_generator(url: str, format: str):
     if format == "mp3":
         mime = "audio/mpeg"
         ext = "mp3"
-        audio_format = "mp3"
         ffmpeg_cmd = [
             "ffmpeg",
+            "-loglevel", "error",
             "-i", "pipe:0",
             "-vn",
             "-c:a", "libmp3lame",
@@ -17,15 +17,15 @@ def audio_stream_generator(url: str, format: str):
             "-f", "mp3",
             "pipe:1"
         ]
-    else:  # fmp4 (m4a)
+    else:  # m4a
         mime = "audio/mp4"
         ext = "mp4"
-        audio_format = "m4a"
         ffmpeg_cmd = [
             "ffmpeg",
+            "-loglevel", "error",
             "-i", "pipe:0",
             "-vn",
-            "-c", "copy",
+            "-c:a", "copy",
             "-movflags", "frag_keyframe+empty_moov+faststart",
             "-f", "mp4",
             "pipe:1"
@@ -34,14 +34,22 @@ def audio_stream_generator(url: str, format: str):
     ytdlp_cmd = [
         "yt-dlp",
         "--no-playlist",
+        "--no-progress",
         "-f", "bestaudio",
-        "--extract-audio",
-        "--audio-format", audio_format,
-        "-o", "-"
+        "-o", "-",
+        "--js-runtimes", "deno"
     ]
 
     cookie_file = cookie_pool.get_cookie()
-    print("Using cookie: [AUDIO]", cookie_file)
+
+    # ADD THESE DEBUG LINES:
+    import os
+    print(f"Cookie file exists: {os.path.exists(cookie_file)}")
+    print(f"Cookie file size: {os.path.getsize(cookie_file) if os.path.exists(cookie_file) else 'N/A'}")
+    print(f"Cookie file readable: {os.access(cookie_file, os.R_OK)}")
+    
+    print("Using cookie [AUDIO]:", cookie_file)
+
     if cookie_file:
         ytdlp_cmd += ["--cookies", cookie_file]
 

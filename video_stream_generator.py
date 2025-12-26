@@ -15,6 +15,7 @@ def video_stream_generator(url: str, quality: str):
         "yt-dlp",
         "--no-playlist",
         "-f", fmt,
+        "--merge-output-format", "mp4",
         "-o", "-"
     ]
 
@@ -28,8 +29,8 @@ def video_stream_generator(url: str, quality: str):
     ffmpeg_cmd = [
         "ffmpeg",
         "-i", "pipe:0",
-        "-c", "copy",
         "-movflags", "frag_keyframe+empty_moov+faststart",
+        "-c", "copy",
         "-f", "mp4",
         "pipe:1"
     ]

@@ -30,19 +30,17 @@ app.add_middleware(
     expose_headers=["Content-Disposition"]
 )
 # Connect to Redis
-REDIS_HOST = os.environ.get("REDIS_HOST")
-REDIS_PORT = os.environ.get("REDIS_PORT")
-REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
+REDIS_URL = os.environ.get("REDIS_URL")
 
 r = None
-if REDIS_HOST and REDIS_PORT:
+if REDIS_URL:
     try:
-        r = redis.Redis(
-            host=REDIS_HOST,
-            port=int(REDIS_PORT),
-            password=REDIS_PASSWORD,
+        r = redis.from_url(
+            REDIS_URL,
             decode_responses=True,
-            socket_connect_timeout=1
+            socket_connect_timeout=3,
+            socket_timeout=3,
+            ssl_cert_reqs=None,   # ✅ REQUIRED on Render
         )
         r.ping()
     except redis.RedisError:

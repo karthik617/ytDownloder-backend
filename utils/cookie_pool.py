@@ -39,7 +39,7 @@ class CookiePool:
                 c for c, meta in self.cookies.items()
                 if meta["cooldown_until"] <= now
             ]
-
+            print("Available cookies:", len(available))
             if not available:
                 raise RuntimeError("No valid cookies available")
 

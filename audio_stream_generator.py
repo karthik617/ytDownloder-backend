@@ -1,4 +1,7 @@
 from pipe_process import pipe_process
+from utils.cookie_pool import CookiePool
+
+cookie_pool = CookiePool()
 
 def audio_stream_generator(url: str,format: str):
     """
@@ -25,6 +28,10 @@ def audio_stream_generator(url: str,format: str):
         "-o", "-",
         url
     ]
+    cookie_file = cookie_pool.get_cookie()
+    print("Using cookie: [AUDIO]", cookie_file)
+    if cookie_file:
+        ytdlp_cmd += ["--cookies", cookie_file]
 
     ffmpeg_cmd = [
         "ffmpeg",

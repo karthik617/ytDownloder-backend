@@ -102,6 +102,7 @@ def get_video_info(url: str, opts: dict):
     #     info = ydl.extract_info(url, download=False)
     try:
         info =  download_with_cookie_rotation(url,opts,False)
+        print("Downloaded info [AUDIO / VIDEO] Info", info)
     except Exception as e:
         raise HTTPException(400, str(e))
 
@@ -205,6 +206,7 @@ def download_playlist(
     #     info = ydl.extract_info(playlist_url, download=False)
     try:
         info =  download_with_cookie_rotation(playlist_url,ydl_opts,False)
+        print("Downloaded info [PLAYLIST] Info", info)
     except Exception as e:
         raise HTTPException(400, str(e))
     title = info.get("title", "playlist")

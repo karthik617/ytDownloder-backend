@@ -22,7 +22,7 @@ def download_with_cookie_rotation(url: str, ydl_opts_base: dict, download: bool)
 
     for _ in range(len(cookie_pool.cookies)):
         cookie = cookie_pool.get_cookie()
-
+        print("Using cookie:", cookie)
         ydl_opts = {
             **ydl_opts_base,
             "cookiefile": cookie,

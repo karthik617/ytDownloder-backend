@@ -31,6 +31,29 @@ app.add_middleware(
     expose_headers=["Content-Disposition"]
 )
 
+@app.on_event("startup")
+async def startup():
+    os.makedirs("cookies",mode=0o777, exist_ok=True)
+    cmd = ["yt-dlp", "--cookies", "cookies/yt_1.txt","https://www.youtube.com"]
+    try:
+        process = subprocess.Popen(    
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        out, err = process.communicate()
+        if err:
+            raise Exception(err)
+        print("Cookie Content:")
+        for line in out.decode("utf-8").splitlines():
+            print('Cookies: ', line)
+        print("Cookies downloaded")
+    except Exception as e:
+        print("Error downloading cookies", e)
+        pass
+    finally:
+        process.kill()
+        process.wait()
 # Connect to Redis
 REDIS_URL = os.environ.get("REDIS_URL")
 r = None
